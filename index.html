@@ -136,6 +136,40 @@ ORDER BY
       </pre>
     </div>
 
+    <div class="mb-5">
+      <h4>
+        Stored procedure yang menerima nama departemen sebagai input, dan
+        mengembalikan daftar karyawan dalam departemen tersebut bersama dengan
+        total gaji (salary) yang mereka terima
+      </h4>
+      <pre class="query">
+CREATE OR REPLACE FUNCTION get_employees_and_department_total_salaries (department_name VARCHAR)
+  RETURNS TABLE (
+    name VARCHAR, department_total_salary DECIMAL)
+  AS $$
+  BEGIN
+    RETURN QUERY WITH department_total_salaries AS (
+      SELECT
+        department,
+        SUM(salary) AS total_salary
+      FROM
+        employees
+      GROUP BY
+        department
+    )
+    SELECT
+      employees.name,
+      total_salary
+      FROM
+        employees JOIN department_total_salaries ON employees.department = department_total_salaries.department
+      WHERE
+        employees.department = department_name;
+  END;
+  $$
+LANGUAGE plpgsql;
+      </pre>
+    </div>
+
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
