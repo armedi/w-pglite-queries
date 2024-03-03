@@ -1,0 +1,109 @@
+-- one
+SELECT * FROM employees;
+
+
+-- two
+SELECT COUNT(*) AS managers_count FROM employees WHERE job_title = 'Manager';
+
+
+-- three
+SELECT name, salary FROM employees WHERE department IN ('Sales', 'Marketing');
+
+
+-- four
+SELECT AVG(salary) AS average_salary FROM employees WHERE joined_date >= (CURRENT_DATE - INTERVAL '5 years');
+
+
+-- five
+WITH sales_by_employees AS (
+	SELECT
+		employee_id,
+		SUM(sales) AS total_sales
+	FROM
+		sales_data
+	GROUP BY
+		employee_id
+)
+SELECT
+	name,
+	total_sales
+FROM
+	employees
+	LEFT JOIN sales_by_employees ON employees.employee_id = sales_by_employees.employee_id
+ORDER BY
+	total_sales DESC
+LIMIT 5;
+
+
+-- six
+WITH departments_with_salaries_above_average AS (
+	SELECT
+		department,
+		AVG(salary) AS avg_salary
+	FROM
+		employees
+	GROUP BY
+		department
+	HAVING
+		AVG(salary) > (
+			SELECT
+				AVG(salary)
+			FROM
+				employees)
+)
+SELECT
+	name,
+	salary,
+	avg_salary AS department_average_salary
+FROM
+	employees
+	INNER JOIN departments_with_salaries_above_average ON employees.department = departments_with_salaries_above_average.department;
+
+
+-- seven
+WITH sales_by_employees AS (
+	SELECT
+		employee_id,
+		SUM(sales) AS total_sales
+	FROM
+		sales_data
+	GROUP BY
+		employee_id
+)
+SELECT
+	name,
+	total_sales,
+	RANK() OVER (ORDER BY total_sales DESC)
+		rank
+	FROM
+		employees
+	LEFT JOIN sales_by_employees ON employees.employee_id = sales_by_employees.employee_id
+ORDER BY
+	rank;
+
+
+-- eight
+CREATE OR REPLACE FUNCTION get_employees_and_salaries (department_name VARCHAR)
+	RETURNS TABLE (
+		name VARCHAR, department_total_salary DECIMAL)
+	AS $$
+BEGIN
+	RETURN QUERY WITH department_total_salaries AS (
+		SELECT
+			department,
+			SUM(salary) AS total_salary
+		FROM
+			employees
+		GROUP BY
+			department
+	)
+	SELECT
+		employees.name,
+		total_salary
+		FROM
+			employees JOIN department_total_salaries ON employees.department = department_total_salaries.department
+		WHERE
+			employees.department = department_name;
+END;
+$$
+LANGUAGE plpgsql;
